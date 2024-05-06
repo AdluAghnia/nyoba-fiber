@@ -1,0 +1,13 @@
+{{template "header" .Logged}}
+
+<p>{{.Title}}</p>
+
+<form action="/admin" method="post">
+    <label for="pass">Pass : </label>
+    <input type="password" name="pass" id="pass">
+    <button type="submit">Submit</button>
+</form>
+
+<a href="/login">Login</a>
+
+<h3>{{.Message}}</h3>
