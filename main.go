@@ -79,14 +79,9 @@ func isUsernameExist(name string) (bool, error) {
 	return true, nil
 }
 
-func validateUserInput(name, password string) (bool, error) {
+func validateRegister(name, password string) (bool, error) {
 	lenValid := len(name) >= 3 && len(password) >= 6
 	nameExist, err := isUsernameExist(name)
-
-	if !nameExist {
-		return false, errors.New("username already exist")
-	}
-
 	if !lenValid {
 		return false, errors.New("password and username should atleast contain 6 characters")
 	}
@@ -97,19 +92,45 @@ func validateUserInput(name, password string) (bool, error) {
 	return nameExist && lenValid, nil
 }
 
+func validateLogin(name, password string) (bool, error) {
+	var storedPassword []byte
+
+	conn, err := connection.InitiliazedDB()
+	if err != nil {
+		return false, err
+	}
+
+	err = conn.QueryRow("SELECT Passwd FROM User WHERE Name = ?", name).Scan(&storedPassword)
+	if err != nil {
+		return false, err
+	}
+
+	err = bcrypt.CompareHashAndPassword(storedPassword, []byte(password))
+	if err != nil {
+		log.Println("Compare Failed")
+		return false, err
+	}
+	return true, nil
+}
+
 func loginHandler(c *fiber.Ctx) error {
-	RegMessage := auth.Message
-	auth.Message = ""
 	// get User information from Form
-	// Validate user input
-	// Retrive User data from the database
-	// Compare Hashed Passowrd with input password
-	// Generate Session or token for Authentication
-	// Return a succses message or error response
-	return c.Render("login", fiber.Map{
-		"Logging": false,
-		"Message": RegMessage,
-	}, "layouts/main")
+	name := c.FormValue("name")
+	password := c.FormValue("passwd")
+	// Validate Login
+	val, err := validateLogin(name, password)
+	if err != nil {
+		log.Println("Val Login")
+		return err
+	}
+
+	if !val {
+		auth.Message = "Login Gagal"
+		return c.Redirect("/auth/login")
+	}
+	log.Printf("Login Valid is %v", val)
+	auth.IsAunthetificated = true
+	return c.Redirect("/")
 }
 
 func registerHandler(c *fiber.Ctx) error {
@@ -118,7 +139,7 @@ func registerHandler(c *fiber.Ctx) error {
 	name := c.FormValue("name")
 	password := c.FormValue("passwd")
 	// Validate user input
-	val, err := validateUserInput(name, password)
+	val, err := validateRegister(name, password)
 	if err != nil {
 		auth.Message = err.Error()
 		return c.Redirect("/auth/register")
@@ -141,7 +162,7 @@ func registerHandler(c *fiber.Ctx) error {
 		auth.Message = "Registrasi Berhasil"
 		auth.IsAunthetificated = false
 
-		return c.Redirect("/login", fiber.StatusFound)
+		return c.Redirect("/auth/login", fiber.StatusFound)
 	}
 
 	log.Printf("Name: %v,  pass : %v  \n", name, password)
@@ -161,13 +182,24 @@ func main() {
 	})
 
 	app.Get("/", func(c *fiber.Ctx) error {
+		isLogin := auth.IsAunthetificated
+		auth.IsAunthetificated = false
+
 		return c.Render("front", fiber.Map{
 			"Title":  "Hellow Wolrd",
-			"Logged": false,
+			"Logged": isLogin,
 		}, "layouts/main")
 	})
+	app.Get("/auth/login", func(c *fiber.Ctx) error {
+		message := auth.Message
+		auth.Message = ""
+		return c.Render("login", fiber.Map{
+			"Logged":  false,
+			"Message": message,
+		}, "layouts/main")
+	})
+	app.Post("/login", loginHandler)
 
-	app.Get("/login", loginHandler)
 	app.Get("/auth/register", func(c *fiber.Ctx) error {
 		message := auth.Message
 		auth.Message = ""
