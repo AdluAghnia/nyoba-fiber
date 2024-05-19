@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 
-	"github.com/AdluAghnia/nyoba-fiber/config"
 	"github.com/AdluAghnia/nyoba-fiber/handler"
 	middlewares "github.com/AdluAghnia/nyoba-fiber/middleware"
 	"github.com/gofiber/fiber/v2"
@@ -22,12 +21,18 @@ func main() {
 		}, "layouts/main")
 	})
 	// create a new JWT middleware
-	jwt := middlewares.NewAuthMiddleware(config.Secret)
-
 	// Routes
-
+	app.Get("/", handler.FrontpageHandler)
 	app.Post("/login", handler.LoginHandler)
-	app.Get("/protected", jwt, handler.Protected)
+
+	app.Use(middlewares.JwtMiddleware)
+	app.Get("/protected", handler.Protected)
+
+	// app.Use("/content", jwtMiddleware, func(c *fiber.Ctx) error {
+	// 	return c.Render("front", fiber.Map{
+	// 		"Title": "This IS CONTENT !!!",
+	// 	}, "layouts/main")
+	// })
 
 	log.Fatal(app.Listen(":6969"))
 }

@@ -13,7 +13,7 @@ func FindByCredentials(username, password string) (*models.User, error) {
 		return nil, err
 	}
 
-	err = conn.QueryRow("SELECT Passwd FROM User WHERE Name = ?", username).
+	err = conn.QueryRow("SELECT id, Name, Passwd FROM User WHERE Name = ?", username).
 		Scan(&user.ID, &user.Username, &user.Password)
 
 	if err != nil {

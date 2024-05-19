@@ -49,8 +49,14 @@ func LoginHandler(c *fiber.Ctx) error {
 	})
 }
 
+func FrontpageHandler(c *fiber.Ctx) error {
+	// Render HTML Template
+	return c.Render("index", fiber.Map{
+		"Title": "This is front page",
+	}, "layouts/main")
+}
+
 func Protected(c *fiber.Ctx) error {
-	// Get the user form context and return it
 	user := c.Locals("user").(*jtoken.Token)
 	claims := user.Claims.(jtoken.MapClaims)
 	name := claims["username"].(string)
