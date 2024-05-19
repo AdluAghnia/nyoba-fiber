@@ -23,7 +23,6 @@ func main() {
 	})
 	// create a new JWT middleware
 	jwt := middlewares.NewAuthMiddleware(config.Secret)
-	log.Fatal(app.Listen(":6969"))
 
 	// Routes
 
